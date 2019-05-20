@@ -90,11 +90,17 @@ def get_validation_data_batch():
 
 def train_model(save=True):
     train_paths = get_train_paths()
+    generated_sounds_output_path = os.path.join(DATA_DIR, 'generated_sounds')
+    generated_images_output_path = os.path.join(DATA_DIR, 'generated_images')
+    os.makedirs(generated_sounds_output_path, exist_ok=True)
+    os.makedirs(generated_images_output_path, exist_ok=True)
     train_generator = SoundExampleGenerator(
         train_paths,
         num_mels=num_mels,
         fixed_sound_length=fixed_sound_length,
         preprocessing_fn=preprocess_mobilenet_input,
+        # save_augmented_images_to_path=generated_images_output_path,
+        # save_augmented_sounds_to_path=generated_sounds_output_path
     )
 
     with timer("Get validation data"):
@@ -111,8 +117,8 @@ def train_model(save=True):
     model.fit_generator(
         train_generator,
         validation_data=validation_data,
-        steps_per_epoch=64,
-        epochs=50,
+        steps_per_epoch=64, # was 64
+        epochs=50, # was 50
         shuffle=False,
         callbacks=callbacks,
     )

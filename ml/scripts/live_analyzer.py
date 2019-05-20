@@ -45,7 +45,7 @@ def stream_audio(screen):
             n_fft=SAMPLES_PER_CHUNK,
             hop_length=SAMPLES_PER_CHUNK * 2,
             n_mels=100,
-            power=1.0
+            power=1.5
         )
         for mel_band_idx, mel_band_series in enumerate(spectrogram):
             bar_height = int(mel_band_series[0] * screen.height / 2)
