@@ -28,9 +28,10 @@ BIT_DEPTH = BYTES_PER_SAMPLE * 8
 smoothing_length = 10
 pygame.init()
 #infoObject = pygame.display.Info()
-window_width = 1280 # infoObject.current_w
-window_height = 720 # infoObject.current_h
-screen = pygame.display.set_mode((window_width, window_height))
+window_width = 1450 # infoObject.current_w
+window_height = 800 # infoObject.current_h
+# screen = pygame.display.set_mode(FULLSCREEN)
+screen = pygame.display.set_mode((window_width, window_height), pygame.FULLSCREEN)
 #screen = pygame.display.set_mode((infoObject.current_w, infoObject.current_h))
 running_program = True
 
@@ -64,13 +65,15 @@ text2_pos_x = text1_pos_x
 text2_pos_y = int(window_height * 0.75)
 text3_pos_x = text1_pos_x
 text3_pos_y = int(window_height * 0.9)
-text_color = (0, 0, 0)
-graph_color = (255, 100, 100)
+text_color = (81, 45, 45)
+graph_color = (186, 24, 24)
+graph_bg_color = (215, 215, 215)
 screen_color = (255, 255, 255)
-compare_rectangle_color = (100, 255, 100)
-rectangle_color = (100, 100, 255)
-highlighted_rectangle_color = (175, 255, 175)
+compare_rectangle_color = (150, 131, 48)
+rectangle_color = (33, 96, 22)
+highlighted_rectangle_color = (84, 165, 69)
 record = []
+display_cutoff = 0.4
 #with open("recordings.txt", "wb") as fp:
 #    pickle.dump(([[0, 0.5]], ["Rec1"]), fp)
 with open("recordings.txt", "rb") as fp:
@@ -99,6 +102,22 @@ text_select_recording = font.render("Select/Deselect for comparison (X)", True, 
 text_rename = font.render("Name/Rename (Enter)", True, text_color)
 text_delete = font.render("Delete Recording (Del)", True, text_color)
 new_name = ""
+
+
+def integral_score(graph):
+    score = 10000 * sum(graph) / len(graph)
+    score = score / 10000
+    return score
+
+
+def threshold_score(graph, threshold):
+    score = 0
+    for i in range(len(graph)):
+        if graph[i] > threshold:
+            score += 1
+    score = int(10000 * score / len(graph))
+    score = score / 100
+    return score
 
 while running_program:
 
@@ -188,17 +207,24 @@ while running_program:
 
     smoothing_data.append(y_predicted)
     y_smoothed = statistics.mean(smoothing_data)
-    graph_for_display.append(y_smoothed ** 2)  # ** 10
+    if y_smoothed < display_cutoff:
+        y_smoothed = 0
+    else:
+        y_smoothed = (y_smoothed - display_cutoff) / (1 - display_cutoff)
+    graph_for_display.append(y_smoothed ** 5)  # ** 10
     if is_recording:
-        record.append(y_smoothed ** 2)   # ** 10
+        record.append(y_smoothed ** 5)   # ** 10
 
     screen.fill(screen_color)
     if is_streaming or in_menu:
         screen.blit(text_mirth, (int((window_width - text_mirth.get_width()) / 2), 3))
     if is_streaming:
+        pygame.draw.rect(screen, graph_bg_color, pygame.Rect(int(window_width * 0.1), int(window_height * 0.1),
+                                                             int(window_width * 0.8), int(window_height * 0.4)))
         for i in range(len(graph_for_display)):
             pygame.draw.rect(screen, graph_color, pygame.Rect(int(window_width * 0.1) + i,
-                     (window_height * 0.5 - int(graph_for_display[i] * window_height * 0.4)), 2, 2))
+                     (window_height * 0.5 - int(graph_for_display[i] * window_height * 0.4)), 2,
+                     2 + int(graph_for_display[i] * window_height * 0.4)))
         screen.blit(text_rec_menu, (text2_pos_x, text2_pos_y))
         if is_recording:
             screen.blit(text_end_recording, (text1_pos_x, text1_pos_y))
@@ -245,17 +271,23 @@ while running_program:
         screen.blit(text_delete, (text2_pos_x + int(window_width * 0.5), text2_pos_y))
 
     elif comparing:
-        # screen.blit(text_back_to_stream, (text1_pos_x, text1_pos_y))
         longest_recording = 0
         for i in range(len(compare_selection)):
             if len(recordings[compare_selection[i]]) > longest_recording:
                 longest_recording = len(recordings[compare_selection[i]])
         graph_height = int((window_height / len(compare_selection))) ####### making space for selections
         for i in range(len(compare_selection)):
+            pygame.draw.rect(screen, graph_bg_color, pygame.Rect(int(0.05 * window_width),
+                    int(i * graph_height),
+                    int(0.9 * window_width), int(0.9 * graph_height)))
             for j in range(len(recordings[compare_selection[i]])):
                 pygame.draw.rect(screen, graph_color,
                         pygame.Rect(int((0.05 + j * 0.9 / longest_recording) * window_width),
-                        int((i + 0.9 - 0.9 * recordings[compare_selection[i]][j]) * graph_height), 2, 2))
-                        ########## draw and compare selected recordings, help function confuses list/float?
+                        int((i + 0.9 - 0.9 * recordings[compare_selection[i]][j]) * graph_height), 2,
+                                    int(graph_height * 0.9 * recordings[compare_selection[i]][j])))
+            screen.blit(recordings_names[compare_selection[i]], (int(window_width * 0.1), int((i + 0.3) * graph_height)))
+            score = threshold_score(recordings[compare_selection[i]], 0.7)
+            text_score = font.render(str(score), True, text_color)
+            screen.blit(text_score, (int(window_width * 0.6), int((i + 0.3) * graph_height)))
 
     pygame.display.flip()

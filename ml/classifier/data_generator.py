@@ -31,7 +31,7 @@ from ml.utils.filename import get_file_paths
 LAUGHTER_CLASS_RATIO = 0.3
 CUT_NON_LAUGHTER_RATIO = 0.5
 LOOP_RATIO = 1
-SILENCE_RATIO = 0.5
+SILENCE_RATIO = 1
 
 
 def write_wav_file(sound_np, output_file_path, sample_rate):
